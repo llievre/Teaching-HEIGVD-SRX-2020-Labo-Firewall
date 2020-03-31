@@ -124,13 +124,28 @@ _Lors de la définition d'une zone, spécifier l'adresse du sous-réseau IP avec
 **LIVRABLE : Remplir le tableau**
 
 | Adresse IP source | Adresse IP destination | Type | Port src | Port dst | Action |
-| :---:             | :---:                  | :---:| :------: | :------: | :----: |
-|                   |                        |      |          |          |        |
-|                   |                        |      |          |          |        |
-|                   |                        |      |          |          |        |
-|                   |                        |      |          |          |        |
-|                   |                        |      |          |          |        |
-|                   |                        |      |          |          |        |
+| :---------------: | :--------------------: | :--: | :------: | :------: | :----: |
+|         *         |           *            | any  |    *     |    *     |  Drop  |
+| 192.168.100.0/24  |     interface WAN      | TCP  |    *     |    53    | Accept |
+|   interface WAN   |    192.168.100.0/24    | TCP  |    53    |    *     | Accept |
+| 192.168.100.0/24  |     interface WAN      | UDP  |    *     |    53    | Accept |
+|   interface WAN   |    192.168.100.0/24    | UDP  |    53    |    *     | Accept |
+| 192.168.100.0/24  |     interface WAN      | ICMP |    *     |    *     | Accept |
+|   interface WAN   |    192.168.100.0/24    | ICMP |    *     |    *     | Accept |
+| 192.168.100.0/24  |    192.168.200.0/24    | ICMP |    *     |    *     | Accept |
+| 192.168.200.0/24  |    192.168.100.0/24    | ICMP |    *     |    *     | Accept |
+| 192.168.100.0/24  |     interface WAN      | TCP  |    *     |    80    | Accept |
+|   interface WAN   |    192.168.100.0/24    | TCP  |    80    |    *     | Accept |
+| 192.168.100.0/24  |     interface WAN      | TCP  |    *     |   8080   | Accept |
+|   interface WAN   |    192.168.100.0/24    | TCP  |   8080   |    *     | Accept |
+| 192.168.100.0/24  |     interface WAN      | TCP  |    *     |   443    | Accept |
+|   interface WAN   |    192.168.100.0/24    | TCP  |   443    |    *     | Accept |
+|   interface WAN   |     192.168.200.3      | TCP  |    *     |    80    | Accept |
+|   192.168.200.3   |     interface WAN      | TCP  |    80    |    *     | Accept |
+| 192.168.100.0/24  |     192.168.200.3      | TCP  |    *     |    80    | Accept |
+|   192.168.200.3   |    192.168.100.0/24    | TCP  |    80    |    *     | Accept |
+| 192.168.100.0/24  |    192.168.200.0/24    | TCP  |    *     |    22    | Accept |
+| 192.168.200.0/24  |    192.168.100.0/24    | TCP  |    22    |    *     | Accept |
 |                   |                        |      |          |          |        |
 
 ---
@@ -226,7 +241,7 @@ ping 192.168.200.3
 ```
 ---
 
-**LIVRABLE : capture d'écran de votre tentative de ping.**  
+![](/home/loic/Documents/SRX/Labo2/ping_failed.png)
 
 ---
 
@@ -281,7 +296,7 @@ ping 192.168.100.3
 
 ---
 
-**LIVRABLE : capture d'écran de votre nouvelle tentative de ping.**
+![](/home/loic/Documents/SRX/Labo2/ping_ok.png)
 
 ---
 
@@ -295,7 +310,7 @@ ping 8.8.8.8
 
 ---
 
-**LIVRABLE : capture d'écran de votre ping vers l'Internet.**
+![](/home/loic/Documents/SRX/Labo2/internet_fail.png)
 
 ---
 
@@ -390,7 +405,34 @@ Commandes iptables :
 ---
 
 ```bash
-LIVRABLE : Commandes iptables
+#AIDE:
+# - https://evilshit.wordpress.com/2013/12/17/how-to-set-up-a-stateful-firewall-with-iptables/
+# - https://www.cyberciti.biz/tips/linux-iptables-4-block-all-incoming-traffic-but-allow-ssh.html
+
+
+#On désactive le trafic par défaut
+iptables -P INPUT DROP
+iptables -P OUTPUT DROP
+iptables -P FORWARD DROP
+
+#LAN -> DMZ, ECHO
+iptables -A FORWARD -p icmp --icmp-type 8 -s 192.168.100.0/24 -d 192.168.200.0/24 -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT 
+
+#DMZ -> LAN, REPONSES
+iptables -A FORWARD -p icmp --icmp-type 0 -s 192.168.200.0/24 -d 192.168.100.0/24 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT 
+
+#DMZ -> LAN, ECHO
+iptables -A FORWARD -p icmp --icmp-type 8 -s 192.168.200.0/24 -d 192.168.100.0/24 -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT 
+
+#LAN -> DMZ, REPONSES
+iptables -A FORWARD -p icmp --icmp-type 0 -s 192.168.100.0/24 -d 192.168.200.0/24 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT 
+
+#LAN -> WAN ECHO
+iptables -A FORWARD -p icmp --icmp-type 8 -s 192.168.100.0/24 -o eth0 -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
+
+#WAN -> LAN, REPONSES
+iptables -A FORWARD -p icmp --icmp-type 0 -d 192.168.100.0/24 -i eth0 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
 ```
 ---
 
@@ -403,11 +445,11 @@ LIVRABLE : Commandes iptables
 
 ```bash
 ping 8.8.8.8
-``` 	            
+```
 Faire une capture du ping.
 
 ---
-**LIVRABLE : capture d'écran de votre ping vers l'Internet.**
+![](/home/loic/Documents/SRX/Labo2/ping_client_ok.png)
 
 ---
 
@@ -417,20 +459,20 @@ Faire une capture du ping.
 </ol>
 
 
-| De Client\_in\_LAN à | OK/KO | Commentaires et explications |
-| :---                 | :---: | :---                         |
-| Interface DMZ du FW  |       |                              |
-| Interface LAN du FW  |       |                              |
-| Client LAN           |       |                              |
-| Serveur WAN          |       |                              |
+| De Client\_in\_LAN à | OK/KO | Commentaires et explications                   |
+| :------------------- | :---: | :--------------------------------------------- |
+| Interface DMZ du FW  |  KO   | Imposible de le joindre, INPUT non configurée  |
+| Interface LAN du FW  |  KO   | Impossible de le joindre, INPUT non configurée |
+| Client LAN           |  OK   | Ping sur lui même => Même sous-réseau          |
+| Serveur WAN          |  OK   | Ok grâce à une règle iptable ci-dessus         |
 
 
-| De Server\_in\_DMZ à | OK/KO | Commentaires et explications |
-| :---                 | :---: | :---                         |
-| Interface DMZ du FW  |       |                              |
-| Interface LAN du FW  |       |                              |
-| Serveur DMZ          |       |                              |
-| Serveur WAN          |       |                              |
+| De Server\_in\_DMZ à | OK/KO | Commentaires et explications               |
+| :------------------- | :---: | :----------------------------------------- |
+| Interface DMZ du FW  |  KO   | Impossible de joindre,INPUT non configurée |
+| Interface LAN du FW  |  KO   | Impossible de joindre,INPUT non configurée |
+| Serveur DMZ          |  OK   | Ping sur lui même => Même sous-réseau      |
+| Serveur WAN          |  KO   | Grâce à une règle iptable ci-dessus        |
 
 
 ## Règles pour le protocole DNS
@@ -448,7 +490,7 @@ ping www.google.com
 
 ---
 
-**LIVRABLE : capture d'écran de votre ping.**
+![](/home/loic/Documents/SRX/Labo2/ping_google_failed.png)
 
 ---
 
@@ -459,7 +501,18 @@ Commandes iptables :
 ---
 
 ```bash
-LIVRABLE : Commandes iptables
+#LAN -> WAN, DNS TCP
+iptables -A FORWARD -s 192.168.100.0/24 -p tcp -o eth0 --dport 53 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT
+
+#WAN -> LAN, DNS TCP REPONSES
+iptables -A FORWARD -d 192.168.100.0/24 -p tcp -i eth0 --sport 53 -m conntrack --ctstate ESTABLISHED -j ACCEPT
+
+#LAN -> WAN, DNS UDP
+iptables -A FORWARD -s 192.168.100.0/24 -p udp -o eth0 --dport 53 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT
+
+#WAN -> LAN, DNS UDP REPONSES
+iptables -A FORWARD -d 192.168.100.0/24 -p udp -i eth0 --sport 53 -m conntrack --ctstate ESTABLISHED -j ACCEPT
+
 ```
 
 ---
@@ -468,10 +521,9 @@ LIVRABLE : Commandes iptables
   <li>Tester en réitérant la commande ping sur le serveur de test (Google ou autre) : 
   </li>                                  
 </ol>
-
 ---
 
-**LIVRABLE : capture d'écran de votre ping.**
+![](/home/loic/Documents/SRX/Labo2/ping_google_ok.png)
 
 ---
 
@@ -479,11 +531,10 @@ LIVRABLE : Commandes iptables
   <li>Remarques (sur le message du premier ping)? 
   </li>                                  
 </ol>
-
 ---
 **Réponse**
 
-**LIVRABLE : Votre réponse ici...**
+Le but était de pinger un nom de domaine et par conséquent il est nécessaire de le transformer en adresse IP et par conséquent il faut utiliser le service DNS. Le port 53 qui est utilisé par le service DNS était bloqué avant qu'on n'entre les lignes iptables.
 
 ---
 
@@ -503,7 +554,22 @@ Commandes iptables :
 ---
 
 ```bash
-LIVRABLE : Commandes iptables
+#LAN -> WAN, HTTP 80 et 8080
+iptables -A FORWARD -s 192.168.100.0/24 -p tcp -o eth0 --dport 80 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT
+
+iptables -A FORWARD -s 192.168.100.0/24 -p tcp -o eth0 --dport 8080 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT
+
+#WAN -> LAN, HTTP REPONSES 80 et 8080
+iptables -A FORWARD -d 192.168.100.0/24 -p tcp -i eth0 --sport 80 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT
+
+iptables -A FORWARD -d 192.168.100.0/24 -p tcp -i eth0 --sport 8080 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT
+
+#LAN -> WAN, HTTPS 
+iptables -A FORWARD -s 192.168.100.0/24 -p tcp -o eth0 --dport 443 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT
+
+#WAN -> LAN, HTTPS REPONSES
+iptables -A FORWARD -d 192.168.100.0/24 -p tcp -i eth0 --sport 443 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT
+
 ```
 
 ---
@@ -515,7 +581,18 @@ Commandes iptables :
 ---
 
 ```bash
-LIVRABLE : Commandes iptables
+#WAN -> DMZ, HTTP
+iptables -A FORWARD -d 192.168.200.3 -p tcp -i eth0 --dport 80 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT
+
+#DMZ -> LAN, HTTP
+iptables -A FORWARD -s 192.168.200.3 -p tcp -i eth0 --sport 80 -m conntrack --ctstate ESTABLISHED -j ACCEPT
+
+#LAN -> DMZ, HTTP
+iptables -A FORWARD -s 192.168.100.0/24 -d 192.168.200.3 -p tcp --dport 80 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT
+
+#DMZ -> LAN, HTTP
+iptables -A FORWARD -s 192.168.200.3 -d 192.168.100.0/24 -p tcp --sport 80 -m conntrack --ctstate ESTABLISHED -j ACCEPT
+
 ```
 ---
 
@@ -523,10 +600,15 @@ LIVRABLE : Commandes iptables
   <li>Tester l’accès à ce serveur depuis le LAN utilisant utilisant wget (ne pas oublier les captures d'écran). 
   </li>                                  
 </ol>
-
 ---
 
-**LIVRABLE : capture d'écran.**
+![](/home/loic/Documents/SRX/Labo2/wget_dmz.png)
+
+
+
+![image-20200331210703329](/home/loic/.config/Typora/typora-user-images/image-20200331210703329.png)
+
+
 
 ---
 
@@ -543,7 +625,17 @@ Commandes iptables :
 ---
 
 ```bash
-LIVRABLE : Commandes iptables
+#LAN(client) -> DMZ
+iptables -A FORWARD -s 192.168.100.3 -d 192.168.200.3 -p tcp --dport 22 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT
+
+#DMZ -> LAN(client)
+iptables -A FORWARD -s 192.168.200.3 -d 192.168.100.3 -p tcp --sport 22 -m conntrack --ctstate ESTABLISHED -j ACCEPT
+
+#LAN(client) -> Firewall
+iptables -A INPUT -s 192.168.100.3 -d 192.168.100.2 -p tcp --dport 22 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT
+
+#Firewall -> LAN(client)
+iptables -A OUTPUT -s 192.168.100.2 -d 192.168.100.3 -p tcp --sport 22 -m conntrack --ctstate ESTABLISHED -j ACCEPT
 ```
 
 ---
@@ -556,7 +648,7 @@ ssh root@192.168.200.3 (password : celui que vous avez configuré)
 
 ---
 
-**LIVRABLE : capture d'écran de votre connexion ssh.**
+![](/home/loic/Documents/SRX/Labo2/ssh_client.png)
 
 ---
 
@@ -564,11 +656,10 @@ ssh root@192.168.200.3 (password : celui que vous avez configuré)
   <li>Expliquer l'utilité de **ssh** sur un serveur. 
   </li>                                  
 </ol>
-
 ---
 **Réponse**
 
-**LIVRABLE : Votre réponse ici...**
+SSH permet d'accéder à un shell de manière sécurisée sur une machine distante. C'est très utile pour pouvoir configurer le serveur directement en ligne de commande.
 
 ---
 
@@ -581,7 +672,7 @@ ssh root@192.168.200.3 (password : celui que vous avez configuré)
 ---
 **Réponse**
 
-**LIVRABLE : Votre réponse ici...**
+Il est nécessaire de limiter le nombre de machines capables de se connecter dessus afin d'éviter qu'une personne malveillante tente de se connecter. On tentera d'éviter un bruteforce et en plus si on venait à perdre le mot de passe, il faudrait que l'attaquant soit interne au réseau.
 
 ---
 
@@ -593,9 +684,8 @@ A présent, vous devriez avoir le matériel nécessaire afin de reproduire la ta
   <li>Insérer la capture d’écran avec toutes vos règles iptables
   </li>                                  
 </ol>
-
 ---
 
-**LIVRABLE : capture d'écran avec toutes vos règles.**
+![](/home/loic/Documents/SRX/Labo2/all_rules.png)
 
 ---
