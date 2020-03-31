@@ -241,7 +241,9 @@ ping 192.168.200.3
 ```
 ---
 
-![](/home/loic/Documents/SRX/Labo2/ping_failed.png)
+![](images/ping_failed.png)
+
+
 
 ---
 
@@ -296,7 +298,7 @@ ping 192.168.100.3
 
 ---
 
-![](/home/loic/Documents/SRX/Labo2/ping_ok.png)
+![](images/ping_ok.png)
 
 ---
 
@@ -310,7 +312,7 @@ ping 8.8.8.8
 
 ---
 
-![](/home/loic/Documents/SRX/Labo2/internet_fail.png)
+![](images/internet_fail.png)
 
 ---
 
@@ -449,7 +451,7 @@ ping 8.8.8.8
 Faire une capture du ping.
 
 ---
-![](/home/loic/Documents/SRX/Labo2/ping_client_ok.png)
+![](images/ping_client_ok.png)
 
 ---
 
@@ -490,7 +492,7 @@ ping www.google.com
 
 ---
 
-![](/home/loic/Documents/SRX/Labo2/ping_google_failed.png)
+![](images/ping_google_failed.png)
 
 ---
 
@@ -523,7 +525,7 @@ iptables -A FORWARD -d 192.168.100.0/24 -p udp -i eth0 --sport 53 -m conntrack -
 </ol>
 ---
 
-![](/home/loic/Documents/SRX/Labo2/ping_google_ok.png)
+![](images/ping_google_ok.png)
 
 ---
 
@@ -602,11 +604,11 @@ iptables -A FORWARD -s 192.168.200.3 -d 192.168.100.0/24 -p tcp --sport 80 -m co
 </ol>
 ---
 
-![](/home/loic/Documents/SRX/Labo2/wget_dmz.png)
+![](images/wget_dmz.png)
 
 
 
-![image-20200331210703329](/home/loic/.config/Typora/typora-user-images/image-20200331210703329.png)
+![image-20200331210703329](images/wget.png)
 
 
 
@@ -648,7 +650,7 @@ ssh root@192.168.200.3 (password : celui que vous avez configuré)
 
 ---
 
-![](/home/loic/Documents/SRX/Labo2/ssh_client.png)
+![](images/ssh_client.png)
 
 ---
 
@@ -686,6 +688,6 @@ A présent, vous devriez avoir le matériel nécessaire afin de reproduire la ta
 </ol>
 ---
 
-![](/home/loic/Documents/SRX/Labo2/all_rules.png)
+![](images/all_rules.png)
 
 ---
